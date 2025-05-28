@@ -1,6 +1,7 @@
 import pygame
 import random
 import sys
+import os
 
 # === CONFIGURATION ===
 SCREEN_WIDTH = 400
@@ -18,6 +19,16 @@ KC_MAX = 1
 SP_MIN = 0
 SP_MAX = 100
 
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 # === SETUP ===
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -32,7 +43,7 @@ class Bird:
         self.x = 100
         self.y = SCREEN_HEIGHT // 2
         self.vel = 0
-        self.image = pygame.image.load("bird.png").convert_alpha()
+        self.image = pygame.image.load(resource_path("bird.png")).convert_alpha()
         self.image = pygame.transform.scale(self.image, (40, 40))  # adjust as needed
         self.width = self.image.get_width()
         self.height = self.image.get_height()
