@@ -14,8 +14,8 @@ FLAP_STRENGTH = -800
 PIPE_SPEED = 6
 PIPE_INTERVAL = 1350  # milliseconds
 DESIRED_HEIGHT = SCREEN_HEIGHT // 2  # for P controller
-KC_MIN = -0.5
-KC_MAX = 1
+KP_MIN = -0.5
+KP_MAX = 1
 SP_MIN = 0
 SP_MAX = 100
 
@@ -110,7 +110,7 @@ def slider(screen, rect, val, min_val, max_val, name):
     knob_radius = 8
     pygame.draw.rect(screen, (180, 180, 180), rect)  # slider bar
 
-    # Map KC to knob x position
+    # Map KP to knob x position
     knob_x = rect.x + int((val - min_val) / (max_val - min_val) * rect.width)
     knob_y = rect.centery
     pygame.draw.circle(screen, (255, 0, 0), (knob_x, knob_y), knob_radius)
@@ -123,7 +123,7 @@ def slider(screen, rect, val, min_val, max_val, name):
     if mouse_down:
         mouse_x, mouse_y = pygame.mouse.get_pos()
         if rect.collidepoint(mouse_x, mouse_y):
-            # Map mouse x back to KC
+            # Map mouse x back to KP
             relative_x = max(0, min(mouse_x - rect.x, rect.width))
             val = min_val + (relative_x / rect.width) * (max_val - min_val)
     return val
@@ -137,8 +137,10 @@ def run_game(control_mode='manual'):
         last_pipe_time = pygame.time.get_ticks()
         running = True
         target_pipe = None
+        blink_count = 0
+        text_on = True
 
-        KC = 0.5  # default gain
+        KP = 0.5  # default gain
         kc_slider_rect = pygame.Rect(20, SCREEN_HEIGHT - 20, 150, 10)
         SP = 45 # default setpoint
         sp_slider_rect = pygame.Rect(200, SCREEN_HEIGHT - 20, 150, 10)
@@ -157,6 +159,12 @@ def run_game(control_mode='manual'):
             keys = pygame.key.get_pressed()
             if control_mode == 'manual':
                 flap = keys[pygame.K_SPACE] or keys[pygame.K_UP]
+                blink_count += 1
+                if blink_count % 10 == 0:
+                    text_on = not text_on
+                if len(pipes) <= 1 and text_on:
+                    text = font.render("Press space bar to flap", True, (0, 0, 0))
+                    screen.blit(text, (50, SCREEN_HEIGHT - 60))
             elif control_mode == 'p':
                 if target_pipe is None or bird.x > target_pipe.x + PIPE_WIDTH * 1.1:
                     target_pipe = next((pipe for pipe in pipes if pipe.x + PIPE_WIDTH > bird.x), None)
@@ -167,7 +175,7 @@ def run_game(control_mode='manual'):
                 for x in range(bird.x, SCREEN_WIDTH, 20):
                     pygame.draw.line(screen, (255, 0 , 0), (x, setpoint), (x + 10, setpoint), 1)
                 error = -(setpoint - bird.y)
-                flap = (KC * error) > 1
+                flap = (KP * error) > 1
 
             # Update
             dt = clock.tick(60) / 1000  # convert to seconds
@@ -202,9 +210,9 @@ def run_game(control_mode='manual'):
             score_text = font.render(f"Score: {score}", True, (0, 0, 0))
             screen.blit(score_text, (10, 10))
 
-            # Make slider for Kc if controller is engaged
+            # Make slider for Kp if controller is engaged
             if control_mode == 'p':
-                KC = slider(screen, kc_slider_rect, KC, KC_MIN, KC_MAX, "Kc")
+                KP = slider(screen, kc_slider_rect, KP, KP_MIN, KP_MAX, "Kp")
                 SP = slider(screen, sp_slider_rect, SP, SP_MIN, SP_MAX, "SP (%)")
 
             pygame.display.flip()
